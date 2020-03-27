@@ -1,8 +1,5 @@
 # Tray.io: Salesforce & Slack Integration Proposal
 
-_Written By: Jennifer Powell_
-
-_Date: March 25 2020_
 
 Table of Contents
 =================
@@ -13,11 +10,11 @@ Table of Contents
     * [Flowchart Diagram](#flowchart-diagram)
     * [Overview](#overview)
     * [Workflow Steps](#workflow-steps)
-    * [Security](#security)
     * [Slack Notification](#slack-notification)
-  * [Data Object References](#data_object_references)
-    * [Salesforce data object](#Salesforce_data_object)
-    * [Formatted Slack Message](#formatted_slack_message)
+    * [Security](#security)
+  * [Data Object References](#data-object-references)
+    * [Salesforce data object](#Salesforce-data-object)
+    * [Formatted Slack Message](#formatted-slack-message)
   * [Outstanding Questions](#outstanding-questions)
   * [References](#documentation-references)
 
@@ -27,12 +24,12 @@ The customer utilizes Salesforce CRM and would like to utilize the Tray.io platf
 
 Specifics
 ---------
-1. When a Salesforce "opportunity" is created, a notification message is posted to a Slack channel (see point 3)
+1. When a Salesforce "opportunity" is created, a notification message is posted to a Slack channel
 2. The notification message posted to Slack will be in the following format:
 
 ![message format](images/message_workflow.png)
 
-3. The customer has sales teams globally (United States, United Kingdom & Europe), the message should be posted into the Slack channel relevant to the `country` field selected when creating the "opportunity":
+3. The customer has sales teams globally (United States, United Kingdom & Europe). The message should be posted into the Slack channel relevant to the `country` field selected when creating the "opportunity":
  * US: #sales-us
  * UK: #sales-uk
  * EU: #sales-eu
@@ -56,25 +53,42 @@ We will utilize the following features of the Tray.io platform to create this in
 
 Workflow Steps
 --------------
-1. Configure the WebHook in your service. (See [guide](https://tray.io/documentation/platform/connectors/webhook-trigger/) for initial setup).
-2. POST JSON object to the Tray.io WebHook URL (See [Salesforce Data Object](#salesforce-data-object)).
+1. Configure the Webhook in your service. (See [guide](https://tray.io/documentation/platform/connectors/webhook-trigger/) for initial setup).
+2. POST JSON object to the Tray.io Webhook URL (See [Salesforce Data Object](#salesforce-data-object)).
 3. Tray.io `Webhook Trigger` recieves the message and passes it to `AWS SQS` using the `Send Message` operation (with FIFO queue configuration).
 4. `AWS SQS` receives the data and adds it to the queue. Note that SQS only accepts attributes in string format.
 5. Every 72 seconds (ensures 50 API calls per hour to Slack), the `Scheduled Trigger` helper reads 1 message (`Interval` operation) from the `AWS SQS` queue (`Recieve Messages` operation) and sends the data to the `Text Helper`.
 6. The `Text Helper` will update the data using the `Contains` operation to: 
-    * add a new field named `channel` and assign it a value of either #sales-us, #sales-uk or #sales-eu according to the value of the `country` field                         
-    * update the `amount` field to be in string format with the proper currency symbol of either $ (USD), € (Euro), or £ (Pound), according to the value of the `country` field
-    * the data than gets passed to the `Data Mapper` helper
-7. The `Data Mapper` formats the JSON into the desired Slack notification format using the `Map Data` operation. (See [Formatted Slack Message](#formatted-slack-message)) and makes a POST request to Slack via chat.postMessage API (See [Posting a Slack Message](https://api.slack.com/methods/chat.postMessage)).
-8. Slack notifications of new opportunities are posted in the proper #sales-us, #sales-uk, #sales-eu Slack Channels(See   [Slack Notification](#slack-notification)).
+    * Add a new field named `channel` and assign it a value of either #sales-us, #sales-uk or #sales-eu according to the value of the `country` field                         
+    * Update the `amount` field to be in string format with the proper currency symbol of either $ (USD), € (Euro), or £ (Pound), according to the value of the `country` field
+    * The data than gets passed to the `Data Mapper` helper
+7. The `Data Mapper` formats the JSON into the desired Slack notification format using the `Map Data` operation. 
 
-Security
---------
-1. Tray.io recommends the customer utilizing a CSRF token to perform authentication with the Tray.io WebHook domain. Please post to the Tray.io domain with a `x-csrf-token` header.
+    For example: 
+    
+    ```
+        "name": "Sample02"
+    ```
+    gets mapped within the "attachments" and "fields" array
+    ```
+    "title": "Opportunity Name",
+    "value": "Sample02",
+    ```
+    (See [Formatted Slack Message](#formatted-slack-message)). Once the data has been formatted, a POST request is made to Slack via chat.postMessage API (See [Posting a Slack Message](https://api.slack.com/methods/chat.postMessage)).
+
+8. Slack notifications of new opportunities are posted in the proper #sales-us, #sales-uk, #sales-eu Slack Channels.
+
 
 Slack Notification
 ------------------
+
+Slack has a [message builder](https://api.slack.com/docs/messages/builder?msg=%7B%22text%22%3A%22I%20am%20a%20test%20message%22%2C%22attachments%22%3A%5B%7B%22text%22%3A%22And%20here%E2%80%99s%20an%20attachment!%22%7D%5D%7D) tool which takes JSON and provides a preview of the message. Testing the [Formatted Slack Message](#formatter-slack-message) returns the following Slack Notification. 
+
 ![Slack Notification](images/slackMessage.png)
+
+Security
+--------
+1. Tray.io recommends the customer utilizing a CSRF token to perform authentication with the Tray.io Webhook domain. Please post to the Tray.io webhook URL with a `x-csrf-token` header.
 
 Data Object References
 ======================
@@ -152,19 +166,20 @@ Outstanding Questions
 1. What is the expected behavior of the integration if the `country` field does not match the list in the specification?
 2. Are there any competing API integrations on the client's Slack workspace that may reduce the number of API calls this particular integration can make on an hourly basis?
 3. How often is the client creating `opportunities` within a workday, and within a typical workhour? 
-4. Are client opportunities created consistenly throughout the day or are there certain periods of the day that are more busy?
+4. Are client opportunities created consistently throughout the day or are there certain periods of the day that are more busy?
 5. Would the client want to restrict notifications to be sent only during working hours? 
 6. Depending on the magnitude of created `opportunitites` with the 50 API call restriction per hour, there may be a delay from when the opportunity was created to when the Slack Notification is made. Will this be an issue with the client?
 7. Tray.io provides a native Salesforce connector where workflows can be triggered on the creation of `Lead` records. Is the client interested in taking advantage of this feature?
+8. What happens when a sales representative closes a deal. Would you like us to integrate any apps to be included in the work flow, such as creating tasks within Trello for the opportunitity? 
 
 Documentation References
 ==========
 * [Tray Workflow Overview](https://tray.io/documentation/platform/overview/)
   * [Webhook Trigger](https://tray.io/documentation/platform/connectors/webhook-trigger/#)
-  * [Text Helper](https://tray.io/documentation/platform/connectors/docs/helpers/text-helper/)
-  * [Data Mapper](https://tray.io/documentation/platform/connectors/docs/core/data-mapper/)
   * [AWS SQS](https://tray.io/documentation/platform/connectors/docs/service/aws-sqs/)
   * [Scheluded Trigger](https://tray.io/documentation/platform/connectors/docs/triggers/scheduled-trigger/)
+  * [Text Helper](https://tray.io/documentation/platform/connectors/docs/helpers/text-helper/)
+  * [Data Mapper](https://tray.io/documentation/platform/connectors/docs/core/data-mapper/)
   * [Slack](https://tray.io/documentation/platform/connectors/docs/service/slack/)
 * Slack Documentation:
   * [Slack API](https://api.slack.com/)
