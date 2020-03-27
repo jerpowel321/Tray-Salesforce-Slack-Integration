@@ -27,7 +27,7 @@ Specifics
 1. When a Salesforce "opportunity" is created, a notification message is posted to a Slack channel
 2. The notification message posted to Slack will be in the following format:
 
-![message format](images/message_workflow.png)
+    ![message format](images/message_workflow.png)
 
 3. The customer has sales teams globally (United States, United Kingdom & Europe). The message should be posted into the Slack channel relevant to the `country` field selected when creating the "opportunity":
  * US: #sales-us
@@ -71,8 +71,8 @@ Workflow Steps
     ```
     gets mapped within the "attachments" and "fields" array
     ```
-    "title": "Opportunity Name",
-    "value": "Sample02",
+        "title": "Opportunity Name",
+        "value": "Sample02",
     ```
     (See [Formatted Slack Message](#formatted-slack-message)). Once the data has been formatted, a POST request is made to Slack via chat.postMessage API (See [Posting a Slack Message](https://api.slack.com/methods/chat.postMessage)).
 
@@ -165,15 +165,13 @@ Outstanding Questions
 =====================
 1. What is the expected behavior of the integration if the `country` field does not match the list in the specification?
 2. Are there any competing API integrations on the client's Slack workspace that may reduce the number of API calls this particular integration can make on an hourly basis?
-3. How often is the client creating `opportunities` within a workday, and within a typical workhour? 
-4. Are client opportunities created consistently throughout the day or are there certain periods of the day that are more busy?
-5. Would the client want to restrict notifications to be sent only during working hours? 
-6. Depending on the magnitude of created `opportunitites` with the 50 API call restriction per hour, there may be a delay from when the opportunity was created to when the Slack Notification is made. Will this be an issue with the client?
-7. Tray.io provides a native Salesforce connector where workflows can be triggered on the creation of `Lead` records. Is the client interested in taking advantage of this feature?
-8. What happens when a sales representative closes a deal. Would you like us to integrate any apps to be included in the work flow, such as creating tasks within Trello for the opportunitity? 
+3. Would the client want to restrict notifications to be sent only during working hours? 
+4. Can the client please provide us with an estimate of the volume and frequency that oppertunities are created? Using this data we may recommend another approach to handle the Slack API call limitation.
+5. Tray.io provides a native Salesforce connector where workflows can be triggered on the creation of `Lead` records. Is the client interested in taking advantage of this feature?
+6. What happens when a sales representative closes a deal? Would the client be interested in an integration for when a deal is made?
 
 Documentation References
-==========
+========================
 * [Tray Workflow Overview](https://tray.io/documentation/platform/overview/)
   * [Webhook Trigger](https://tray.io/documentation/platform/connectors/webhook-trigger/#)
   * [AWS SQS](https://tray.io/documentation/platform/connectors/docs/service/aws-sqs/)
